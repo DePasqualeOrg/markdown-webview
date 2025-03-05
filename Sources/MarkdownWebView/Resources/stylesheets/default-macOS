@@ -1,7 +1,7 @@
 #markdown-rendered {
     color: -apple-system-label;
     font-family: system-ui;
-    font-size: 10pt;
+    font-size: 20pt;
     line-height: 1.5;
     word-wrap: break-word;
 }
@@ -43,7 +43,7 @@
 #markdown-rendered h1 {
     margin: .67em 0;
     font-weight: 600;
-    font-size: 2em;
+    font-size: 1.25em;
 }
 
 #markdown-rendered mark {
@@ -194,7 +194,7 @@
 
 #markdown-rendered h2 {
     font-weight: 600;
-    font-size: 1.5em;
+    font-size: 1.25em;
 }
 
 #markdown-rendered h3 {
@@ -257,14 +257,14 @@
 #markdown-rendered code,
 #markdown-rendered samp {
     font-family: ui-monospace;
-    font-size: 12px;
+    font-size: 20px;
 }
 
 #markdown-rendered pre {
     margin-top: 0;
     margin-bottom: 0;
     font-family: ui-monospace;
-    font-size: 12px;
+    font-size: 20px;
     word-wrap: normal;
     overflow-x: scroll;
     padding: 12px;
@@ -453,7 +453,7 @@
 #markdown-rendered tt {
     padding: .2em .4em;
     margin: 0;
-    font-size: 85%;
+    font-size: 100%;
     white-space: break-spaces;
     background-color: -apple-system-background;
     border-radius: 6px;

@@ -35,36 +35,31 @@
         .code-block-wrapper {
             position: relative;
         }
-
+        
+        /* Position button in the top-right corner */
         .copy-code-button {
-            background-color: #f0f0f0;
             border: none;
             border-radius: 4px;
             padding: 6px;
             cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.2s ease-in-out;
+            opacity: 1;
             position: absolute;
             top: 5px;
             right: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
+            width: 28px;
+            height: 28px;
+            z-index: 10;
         }
 
         .copy-code-button svg {
-            fill: currentColor;
-        }
-
-        .code-block-wrapper:hover .copy-code-button {
-            opacity: 1;
+            fill: #007AFF; /* iOS accent blue color */
         }
 
         .copy-code-button.copied {
-            background-color: #4caf50;
-            color: white;
             opacity: 1;
-            transition: background-color 0.2s ease-in-out;
         }
     </style>
     <script>PLACEHOLDER_KATEX_SCRIPT</script>
@@ -119,9 +114,22 @@
         function addCopyButtons() {
             const codeBlocks = document.querySelectorAll('pre');
             codeBlocks.forEach((codeBlock) => {
+                // Create wrapper with correct positioning context
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-block-wrapper';
+                
+                // Move the code block into the wrapper
+                codeBlock.parentNode.insertBefore(wrapper, codeBlock);
+                wrapper.appendChild(codeBlock);
+                
+                // Create the copy button with proper class only (no inline styles)
                 const button = document.createElement('button');
                 button.className = 'copy-code-button';
                 button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="14" height="14"><path d="M64 464H288c8.8 0 16-7.2 16-16V384h48v64c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V224c0-35.3 28.7-64 64-64h64v48H64c-8.8 0-16 7.2-16 16V448c0 8.8 7.2 16 16 16zM224 304H448c8.8 0 16-7.2 16-16V64c0-8.8-7.2-16-16-16H224c-8.8 0-16 7.2-16 16V288c0 8.8 7.2 16 16 16zm-64-16V64c0-35.3 28.7-64 64-64H448c35.3 0 64 28.7 64 64V288c0 35.3-28.7 64-64 64H224c-35.3 0-64-28.7-64-64z"/></svg>'; // Copy icon SVG
+                
+                // Add the button to the wrapper, NOT inside the pre element
+                wrapper.insertBefore(button, codeBlock);
+                
                 button.addEventListener('click', async () => {
                     window.webkit.messageHandlers.copyToPasteboard.postMessage(codeBlock.innerText);
                     button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="14" height="14"><path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>'; // Check icon SVG
@@ -130,13 +138,7 @@
                         button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="14" height="14"><path d="M64 464H288c8.8 0 16-7.2 16-16V384h48v64c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V224c0-35.3 28.7-64 64-64h64v48H64c-8.8 0-16 7.2-16 16V448c0 8.8 7.2 16 16 16zM224 304H448c8.8 0 16-7.2 16-16V64c0-8.8-7.2-16-16-16H224c-8.8 0-16 7.2-16 16V288c0 8.8 7.2 16 16 16zm-64-16V64c0-35.3 28.7-64 64-64H448c35.3 0 64 28.7 64 64V288c0 35.3-28.7 64-64 64H224c-35.3 0-64-28.7-64-64z"/></svg>'; // Copy icon SVG
                         button.classList.remove('copied');
                     }, 2000);
-                    console.log(codeBlock.textContent);
                 });
-                const wrapper = document.createElement('div');
-                wrapper.className = 'code-block-wrapper';
-                codeBlock.parentNode.insertBefore(wrapper, codeBlock);
-                wrapper.appendChild(codeBlock);
-                wrapper.appendChild(button);
             });
         }
 

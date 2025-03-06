@@ -1,7 +1,7 @@
 #markdown-rendered {
     color: -apple-system-label;
     font-family: system-ui;
-    font-size: 13pt;
+    font-size: calc(13pt * var(--font-size-multiplier));
     line-height: 1.5;
     word-wrap: break-word;
 }
@@ -257,14 +257,14 @@
 #markdown-rendered code,
 #markdown-rendered samp {
     font-family: ui-monospace;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-size-multiplier));
 }
 
 #markdown-rendered pre {
     margin-top: 0;
     margin-bottom: 0;
     font-family: ui-monospace;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-size-multiplier));
     word-wrap: normal;
     overflow-x: scroll;
     padding: 12px;

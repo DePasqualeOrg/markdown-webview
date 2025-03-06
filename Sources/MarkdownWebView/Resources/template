@@ -11,6 +11,7 @@
     <style>
         :root {
             color-scheme: light dark !important;
+            --font-size-multiplier: PLACEHOLDER_FONT_SIZE_MULTIPLIER;
         }
 
         html,
@@ -99,6 +100,10 @@
             markdownRenderedElement.innerHTML = markdownIt.render(markdownContent);
             addCopyButtons()
             window.webkit.messageHandlers.renderedContentHandler.postMessage(markdownContentBase64Encoded);
+        }
+        
+        window.updateFontSizeMultiplier = (multiplier) => {
+            document.documentElement.style.setProperty('--font-size-multiplier', multiplier);
         }
 
         function addCopyButtons() {

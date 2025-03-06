@@ -73,17 +73,20 @@ import WebKit
         let customStylesheet: String?
         let linkActivationHandler: ((URL) -> Void)?
         let renderedContentHandler: ((String) -> Void)?
+        let fontSize: CGFloat
 
-        public init(_ markdownContent: String, customStylesheet: String? = nil) {
+        public init(_ markdownContent: String, customStylesheet: String? = nil, fontSize: CGFloat = 1.0) {
             self.markdownContent = markdownContent
             self.customStylesheet = customStylesheet
+            self.fontSize = fontSize
             linkActivationHandler = nil
             renderedContentHandler = nil
         }
 
-        init(_ markdownContent: String, customStylesheet: String?, linkActivationHandler: ((URL) -> Void)?, renderedContentHandler: ((String) -> Void)?) {
+        init(_ markdownContent: String, customStylesheet: String?, fontSize: CGFloat, linkActivationHandler: ((URL) -> Void)?, renderedContentHandler: ((String) -> Void)?) {
             self.markdownContent = markdownContent
             self.customStylesheet = customStylesheet
+            self.fontSize = fontSize
             self.linkActivationHandler = linkActivationHandler
             self.renderedContentHandler = renderedContentHandler
         }
@@ -99,6 +102,7 @@ import WebKit
         func updatePlatformView(_ platformView: CustomWebView, context _: Context) {
             guard !platformView.isLoading else { return } /// This function might be called when the page is still loading, at which time `window.proxy` is not available yet.
             platformView.updateMarkdownContent(markdownContent)
+            platformView.updateFontSize(fontSize)
         }
 
         #if os(macOS)
@@ -108,11 +112,11 @@ import WebKit
         #endif
 
         public func onLinkActivation(_ linkActivationHandler: @escaping (URL) -> Void) -> Self {
-            .init(markdownContent, customStylesheet: customStylesheet, linkActivationHandler: linkActivationHandler, renderedContentHandler: renderedContentHandler)
+            .init(markdownContent, customStylesheet: customStylesheet, fontSize: fontSize, linkActivationHandler: linkActivationHandler, renderedContentHandler: renderedContentHandler)
         }
 
         public func onRendered(_ renderedContentHandler: @escaping (String) -> Void) -> Self {
-            .init(markdownContent, customStylesheet: customStylesheet, linkActivationHandler: linkActivationHandler, renderedContentHandler: renderedContentHandler)
+            .init(markdownContent, customStylesheet: customStylesheet, fontSize: fontSize, linkActivationHandler: linkActivationHandler, renderedContentHandler: renderedContentHandler)
         }
 
         public class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
@@ -168,12 +172,16 @@ import WebKit
                     .replacingOccurrences(of: "PLACEHOLDER_KATEX_STYLE", with: resources.katexStyle)
                     .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_SCRIPT", with: resources.texmathScript)
                     .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_STYLE", with: resources.texmathStyle)
+                    .replacingOccurrences(of: "PLACEHOLDER_FONT_SIZE_MULTIPLIER", with: String(format: "%.1f", parent.fontSize))
                 platformView.loadHTMLString(htmlString, baseURL: nil)
+                platformView.currentFontSize = parent.fontSize
             }
 
             /// Update the content on first finishing loading.
             public func webView(_ webView: WKWebView, didFinish _: WKNavigation!) {
-                (webView as! CustomWebView).updateMarkdownContent(parent.markdownContent)
+                let customWebView = webView as! CustomWebView
+                customWebView.updateMarkdownContent(parent.markdownContent)
+                customWebView.updateFontSize(parent.fontSize)
             }
 
             public func webView(_: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
@@ -224,6 +232,7 @@ import WebKit
 
         public class CustomWebView: WKWebView {
             var contentHeight: CGFloat = 0
+            var currentFontSize: CGFloat = 1.0
 
             override public var intrinsicContentSize: CGSize {
                 .init(width: super.intrinsicContentSize.width, height: contentHeight)
@@ -248,6 +257,12 @@ import WebKit
                 guard let markdownContentBase64Encoded = markdownContent.data(using: .utf8)?.base64EncodedString() else { return }
 
                 callAsyncJavaScript("window.updateWithMarkdownContentBase64Encoded(`\(markdownContentBase64Encoded)`)", in: nil, in: .page, completionHandler: nil)
+            }
+            
+            func updateFontSize(_ fontSize: CGFloat) {
+                guard fontSize != currentFontSize else { return }
+                currentFontSize = fontSize
+                callAsyncJavaScript("window.updateFontSizeMultiplier(\(fontSize))", in: nil, in: .page, completionHandler: nil)
             }
 
             #if os(macOS)

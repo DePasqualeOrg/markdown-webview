@@ -71,19 +71,22 @@ import WebKit
         let linkActivationHandler: ((URL) -> Void)?
         let renderedContentHandler: ((String) -> Void)?
         let fontSize: CGFloat
+        let initialHeight: CGFloat?
 
-        public init(_ markdownContent: String, customStylesheet: String? = nil, fontSize: CGFloat = 1.0) {
+        public init(_ markdownContent: String, customStylesheet: String? = nil, fontSize: CGFloat = 1.0, initialHeight: CGFloat? = nil) {
             self.markdownContent = markdownContent
             self.customStylesheet = customStylesheet
             self.fontSize = fontSize
+            self.initialHeight = initialHeight
             linkActivationHandler = nil
             renderedContentHandler = nil
         }
 
-        init(_ markdownContent: String, customStylesheet: String?, fontSize: CGFloat, linkActivationHandler: ((URL) -> Void)?, renderedContentHandler: ((String) -> Void)?) {
+        init(_ markdownContent: String, customStylesheet: String?, fontSize: CGFloat, initialHeight: CGFloat?, linkActivationHandler: ((URL) -> Void)?, renderedContentHandler: ((String) -> Void)?) {
             self.markdownContent = markdownContent
             self.customStylesheet = customStylesheet
             self.fontSize = fontSize
+            self.initialHeight = initialHeight
             self.linkActivationHandler = linkActivationHandler
             self.renderedContentHandler = renderedContentHandler
         }
@@ -109,11 +112,11 @@ import WebKit
         #endif
 
         public func onLinkActivation(_ linkActivationHandler: @escaping (URL) -> Void) -> Self {
-            .init(markdownContent, customStylesheet: customStylesheet, fontSize: fontSize, linkActivationHandler: linkActivationHandler, renderedContentHandler: renderedContentHandler)
+            .init(markdownContent, customStylesheet: customStylesheet, fontSize: fontSize, initialHeight: initialHeight, linkActivationHandler: linkActivationHandler, renderedContentHandler: renderedContentHandler)
         }
 
         public func onRendered(_ renderedContentHandler: @escaping (String) -> Void) -> Self {
-            .init(markdownContent, customStylesheet: customStylesheet, fontSize: fontSize, linkActivationHandler: linkActivationHandler, renderedContentHandler: renderedContentHandler)
+            .init(markdownContent, customStylesheet: customStylesheet, fontSize: fontSize, initialHeight: initialHeight, linkActivationHandler: linkActivationHandler, renderedContentHandler: renderedContentHandler)
         }
 
         public class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
@@ -123,6 +126,7 @@ import WebKit
             init(parent: MarkdownWebView) {
                 self.parent = parent
                 platformView = .init()
+                platformView.initialHeight = parent.initialHeight
                 super.init()
 
                 platformView.navigationDelegate = self
@@ -228,10 +232,12 @@ import WebKit
 
         public class CustomWebView: WKWebView {
             var contentHeight: CGFloat = 0
+            var initialHeight: CGFloat?
             var currentFontSize: CGFloat = 1.0
 
             override public var intrinsicContentSize: CGSize {
-                .init(width: super.intrinsicContentSize.width, height: contentHeight)
+                let height = contentHeight > 0 ? contentHeight : (initialHeight ?? 0)
+                return .init(width: super.intrinsicContentSize.width, height: height)
             }
 
             /// Disables scrolling.

@@ -100,19 +100,35 @@ import WebKit
                 #elseif os(iOS)
                     let defaultStylesheetFileName = "default-iOS"
                 #endif
-                guard let templateFileURL = Bundle.module.url(forResource: "template", withExtension: ""),
+                guard let templateFileURL = Bundle.module.url(forResource: "template", withExtension: "", subdirectory: "Resources"),
                       let templateString = try? String(contentsOf: templateFileURL),
-                      let scriptFileURL = Bundle.module.url(forResource: "script", withExtension: ""),
+                      let scriptFileURL = Bundle.module.url(forResource: "script", withExtension: "", subdirectory: "Resources"),
                       let script = try? String(contentsOf: scriptFileURL),
-                      let defaultStylesheetFileURL = Bundle.module.url(forResource: defaultStylesheetFileName, withExtension: ""),
-                      let defaultStylesheet = try? String(contentsOf: defaultStylesheetFileURL)
+                      let defaultStylesheetFileURL = Bundle.module.url(forResource: defaultStylesheetFileName, withExtension: "", subdirectory: "Resources/stylesheets"),
+                      let defaultStylesheet = try? String(contentsOf: defaultStylesheetFileURL),
+                      let fontAwesomeStyleURL = Bundle.module.url(forResource: "font-awesome", withExtension: "css", subdirectory: "Resources/stylesheets"),
+                      let fontAwesomeStyle = try? String(contentsOf: fontAwesomeStyleURL),
+                      let katexScriptURL = Bundle.module.url(forResource: "katex", withExtension: "js", subdirectory: "Resources/scripts"),
+                      let katexScript = try? String(contentsOf: katexScriptURL),
+                      let katexStyleURL = Bundle.module.url(forResource: "katex", withExtension: "css", subdirectory: "Resources/stylesheets"),
+                      let katexStyle = try? String(contentsOf: katexStyleURL),
+                      let texmathScriptURL = Bundle.module.url(forResource: "texmath", withExtension: "js", subdirectory: "Resources/scripts"),
+                      let texmathScript = try? String(contentsOf: texmathScriptURL),
+                      let texmathStyleURL = Bundle.module.url(forResource: "texmath", withExtension: "css", subdirectory: "Resources/stylesheets"),
+                      let texmathStyle = try? String(contentsOf: texmathStyleURL)
                 else {
-                    print("Failed to load resources.")
+                    // Check which resource failed to load
+                    print("Some resources failed to load")
                     return
                 }
                 let htmlString = templateString
                     .replacingOccurrences(of: "PLACEHOLDER_SCRIPT", with: script)
                     .replacingOccurrences(of: "PLACEHOLDER_STYLESHEET", with: self.parent.customStylesheet ?? defaultStylesheet)
+                    .replacingOccurrences(of: "PLACEHOLDER_FONTAWESOME_STYLE", with: fontAwesomeStyle)
+                    .replacingOccurrences(of: "PLACEHOLDER_KATEX_SCRIPT", with: katexScript)
+                    .replacingOccurrences(of: "PLACEHOLDER_KATEX_STYLE", with: katexStyle)
+                    .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_SCRIPT", with: texmathScript)
+                    .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_STYLE", with: texmathStyle)
                 platformView.loadHTMLString(htmlString, baseURL: nil)
             }
 

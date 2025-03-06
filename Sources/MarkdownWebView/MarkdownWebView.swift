@@ -15,7 +15,6 @@ import WebKit
             let templateString: String
             let script: String
             let defaultStylesheet: String
-            let fontAwesomeStyle: String
             let katexScript: String
             let katexStyle: String
             let texmathScript: String
@@ -47,7 +46,6 @@ import WebKit
             guard let template = loadResource(name: "template", subdir: "Resources"),
                   let script = loadResource(name: "script", subdir: "Resources"),
                   let defaultStylesheet = loadResource(name: defaultStylesheetFileName, subdir: "Resources/stylesheets"),
-                  let fontAwesome = loadResource(name: "font-awesome", ext: "css", subdir: "Resources/stylesheets"),
                   let katexJs = loadResource(name: "katex", ext: "js", subdir: "Resources/scripts"),
                   let katexCss = loadResource(name: "katex", ext: "css", subdir: "Resources/stylesheets"),
                   let texmathJs = loadResource(name: "texmath", ext: "js", subdir: "Resources/scripts"),
@@ -60,7 +58,6 @@ import WebKit
                 templateString: template,
                 script: script,
                 defaultStylesheet: defaultStylesheet,
-                fontAwesomeStyle: fontAwesome,
                 katexScript: katexJs,
                 katexStyle: katexCss,
                 texmathScript: texmathJs,
@@ -167,7 +164,6 @@ import WebKit
                 let htmlString = resources.templateString
                     .replacingOccurrences(of: "PLACEHOLDER_SCRIPT", with: resources.script)
                     .replacingOccurrences(of: "PLACEHOLDER_STYLESHEET", with: self.parent.customStylesheet ?? resources.defaultStylesheet)
-                    .replacingOccurrences(of: "PLACEHOLDER_FONTAWESOME_STYLE", with: resources.fontAwesomeStyle)
                     .replacingOccurrences(of: "PLACEHOLDER_KATEX_SCRIPT", with: resources.katexScript)
                     .replacingOccurrences(of: "PLACEHOLDER_KATEX_STYLE", with: resources.katexStyle)
                     .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_SCRIPT", with: resources.texmathScript)

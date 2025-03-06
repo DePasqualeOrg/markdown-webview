@@ -1,4 +1,3 @@
-https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css
 https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js
 https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css
 https://cdn.jsdelivr.net/npm/markdown-it-texmath@1.0.0/texmath.min.js

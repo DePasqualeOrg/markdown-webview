@@ -10,6 +10,65 @@ import WebKit
 #if !os(visionOS)
     @available(macOS 11.0, iOS 14.0, *)
     public struct MarkdownWebView: PlatformViewRepresentable {
+        // Static resources loaded only once
+        private struct Resources {
+            let templateString: String
+            let script: String
+            let defaultStylesheet: String
+            let fontAwesomeStyle: String
+            let katexScript: String
+            let katexStyle: String
+            let texmathScript: String
+            let texmathStyle: String
+        }
+        
+        private static func loadResource(name: String, ext: String = "", subdir: String) -> String? {
+            guard let url = Bundle.module.url(forResource: name, withExtension: ext, subdirectory: subdir) else {
+                print("Failed to load \(name).\(ext) from \(subdir)")
+                return nil
+            }
+            
+            do {
+                return try String(contentsOf: url)
+            } catch {
+                print("Error reading \(name).\(ext): \(error.localizedDescription)")
+                return nil
+            }
+        }
+        
+        private static let resources: Resources? = {
+            #if os(macOS)
+                let defaultStylesheetFileName = "default-macOS"
+            #elseif os(iOS)
+                let defaultStylesheetFileName = "default-iOS"
+            #endif
+            
+            // Load all resources
+            guard let template = loadResource(name: "template", subdir: "Resources"),
+                  let script = loadResource(name: "script", subdir: "Resources"),
+                  let defaultStylesheet = loadResource(name: defaultStylesheetFileName, subdir: "Resources/stylesheets"),
+                  let fontAwesome = loadResource(name: "font-awesome", ext: "css", subdir: "Resources/stylesheets"),
+                  let katexJs = loadResource(name: "katex", ext: "js", subdir: "Resources/scripts"),
+                  let katexCss = loadResource(name: "katex", ext: "css", subdir: "Resources/stylesheets"),
+                  let texmathJs = loadResource(name: "texmath", ext: "js", subdir: "Resources/scripts"),
+                  let texmathCss = loadResource(name: "texmath", ext: "css", subdir: "Resources/stylesheets") else {
+                print("Failed to load one or more required resources")
+                return nil
+            }
+            
+            return Resources(
+                templateString: template,
+                script: script,
+                defaultStylesheet: defaultStylesheet,
+                fontAwesomeStyle: fontAwesome,
+                katexScript: katexJs,
+                katexStyle: katexCss,
+                texmathScript: texmathJs,
+                texmathStyle: texmathCss
+            )
+        }()
+        
+        // Instance properties
         let markdownContent: String
         let customStylesheet: String?
         let linkActivationHandler: ((URL) -> Void)?
@@ -95,40 +154,20 @@ import WebKit
                 platformView.configuration.userContentController.add(self, name: "renderedContentHandler")
                 platformView.configuration.userContentController.add(self, name: "copyToPasteboard")
 
-                #if os(macOS)
-                    let defaultStylesheetFileName = "default-macOS"
-                #elseif os(iOS)
-                    let defaultStylesheetFileName = "default-iOS"
-                #endif
-                guard let templateFileURL = Bundle.module.url(forResource: "template", withExtension: "", subdirectory: "Resources"),
-                      let templateString = try? String(contentsOf: templateFileURL),
-                      let scriptFileURL = Bundle.module.url(forResource: "script", withExtension: "", subdirectory: "Resources"),
-                      let script = try? String(contentsOf: scriptFileURL),
-                      let defaultStylesheetFileURL = Bundle.module.url(forResource: defaultStylesheetFileName, withExtension: "", subdirectory: "Resources/stylesheets"),
-                      let defaultStylesheet = try? String(contentsOf: defaultStylesheetFileURL),
-                      let fontAwesomeStyleURL = Bundle.module.url(forResource: "font-awesome", withExtension: "css", subdirectory: "Resources/stylesheets"),
-                      let fontAwesomeStyle = try? String(contentsOf: fontAwesomeStyleURL),
-                      let katexScriptURL = Bundle.module.url(forResource: "katex", withExtension: "js", subdirectory: "Resources/scripts"),
-                      let katexScript = try? String(contentsOf: katexScriptURL),
-                      let katexStyleURL = Bundle.module.url(forResource: "katex", withExtension: "css", subdirectory: "Resources/stylesheets"),
-                      let katexStyle = try? String(contentsOf: katexStyleURL),
-                      let texmathScriptURL = Bundle.module.url(forResource: "texmath", withExtension: "js", subdirectory: "Resources/scripts"),
-                      let texmathScript = try? String(contentsOf: texmathScriptURL),
-                      let texmathStyleURL = Bundle.module.url(forResource: "texmath", withExtension: "css", subdirectory: "Resources/stylesheets"),
-                      let texmathStyle = try? String(contentsOf: texmathStyleURL)
-                else {
-                    // Check which resource failed to load
-                    print("Some resources failed to load")
+                // Use the cached static resources
+                guard let resources = MarkdownWebView.resources else {
+                    print("Failed to load resources.")
                     return
                 }
-                let htmlString = templateString
-                    .replacingOccurrences(of: "PLACEHOLDER_SCRIPT", with: script)
-                    .replacingOccurrences(of: "PLACEHOLDER_STYLESHEET", with: self.parent.customStylesheet ?? defaultStylesheet)
-                    .replacingOccurrences(of: "PLACEHOLDER_FONTAWESOME_STYLE", with: fontAwesomeStyle)
-                    .replacingOccurrences(of: "PLACEHOLDER_KATEX_SCRIPT", with: katexScript)
-                    .replacingOccurrences(of: "PLACEHOLDER_KATEX_STYLE", with: katexStyle)
-                    .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_SCRIPT", with: texmathScript)
-                    .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_STYLE", with: texmathStyle)
+                
+                let htmlString = resources.templateString
+                    .replacingOccurrences(of: "PLACEHOLDER_SCRIPT", with: resources.script)
+                    .replacingOccurrences(of: "PLACEHOLDER_STYLESHEET", with: self.parent.customStylesheet ?? resources.defaultStylesheet)
+                    .replacingOccurrences(of: "PLACEHOLDER_FONTAWESOME_STYLE", with: resources.fontAwesomeStyle)
+                    .replacingOccurrences(of: "PLACEHOLDER_KATEX_SCRIPT", with: resources.katexScript)
+                    .replacingOccurrences(of: "PLACEHOLDER_KATEX_STYLE", with: resources.katexStyle)
+                    .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_SCRIPT", with: resources.texmathScript)
+                    .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_STYLE", with: resources.texmathStyle)
                 platformView.loadHTMLString(htmlString, baseURL: nil)
             }
 

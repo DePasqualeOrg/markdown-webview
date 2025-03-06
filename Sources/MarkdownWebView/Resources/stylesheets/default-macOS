@@ -1,7 +1,14 @@
+:root {
+    --base-font-size: 20pt;
+    --medium-font-size: 1.25em;
+    --normal-font-size: 1em;
+    --code-font-size: calc(14pt * var(--font-size-multiplier));
+}
+
 #markdown-rendered {
     color: -apple-system-label;
     font-family: system-ui;
-    font-size: calc(20pt * var(--font-size-multiplier));
+    font-size: calc(var(--base-font-size) * var(--font-size-multiplier));
     line-height: 1.5;
     word-wrap: break-word;
 }
@@ -43,7 +50,7 @@
 #markdown-rendered h1 {
     margin: .67em 0;
     font-weight: 600;
-    font-size: 1.25em;
+    font-size: var(--medium-font-size);
 }
 
 #markdown-rendered mark {
@@ -81,7 +88,7 @@
 #markdown-rendered pre,
 #markdown-rendered samp {
     font-family: ui-monospace;
-    font-size: 1em;
+    font-size: var(--normal-font-size);
 }
 
 #markdown-rendered figure {
@@ -194,17 +201,17 @@
 
 #markdown-rendered h2 {
     font-weight: 600;
-    font-size: 1.25em;
+    font-size: var(--medium-font-size);
 }
 
 #markdown-rendered h3 {
     font-weight: 600;
-    font-size: 1.25em;
+    font-size: var(--medium-font-size);
 }
 
 #markdown-rendered h4 {
     font-weight: 600;
-    font-size: 1em;
+    font-size: var(--normal-font-size);
 }
 
 #markdown-rendered h5 {
@@ -257,14 +264,14 @@
 #markdown-rendered code,
 #markdown-rendered samp {
     font-family: ui-monospace;
-    font-size: calc(20px * var(--font-size-multiplier));
+    font-size: var(--code-font-size);
 }
 
 #markdown-rendered pre {
     margin-top: 0;
     margin-bottom: 0;
     font-family: ui-monospace;
-    font-size: calc(20px * var(--font-size-multiplier));
+    font-size: var(--code-font-size);
     word-wrap: normal;
     overflow-x: scroll;
     padding: 12px;
@@ -387,7 +394,7 @@
 #markdown-rendered dl dt {
     padding: 0;
     margin-top: 16px;
-    font-size: 1em;
+    font-size: var(--normal-font-size);
     font-style: italic;
     font-weight: 600;
 }

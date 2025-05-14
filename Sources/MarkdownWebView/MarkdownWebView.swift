@@ -160,6 +160,11 @@ public struct MarkdownWebView: PlatformViewRepresentable {
             platformView.configuration.userContentController.add(self, name: "renderedContentHandler")
             platformView.configuration.userContentController.add(self, name: "copyToPasteboard")
 
+            loadInitialHTML()
+            platformView.currentFontSize = parent.fontSize
+        }
+
+        func loadInitialHTML() {
             // Use the cached static resources
             guard let resources = MarkdownWebView.resources else {
                 print("Failed to load resources.")
@@ -168,14 +173,13 @@ public struct MarkdownWebView: PlatformViewRepresentable {
 
             let htmlString = resources.templateString
                 .replacingOccurrences(of: "PLACEHOLDER_SCRIPT", with: resources.script)
-                .replacingOccurrences(of: "PLACEHOLDER_STYLESHEET", with: self.parent.customStylesheet ?? resources.defaultStylesheet)
+                .replacingOccurrences(of: "PLACEHOLDER_STYLESHEET", with: parent.customStylesheet ?? resources.defaultStylesheet)
                 .replacingOccurrences(of: "PLACEHOLDER_KATEX_SCRIPT", with: resources.katexScript)
                 .replacingOccurrences(of: "PLACEHOLDER_KATEX_STYLE", with: resources.katexStyle)
                 .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_SCRIPT", with: resources.texmathScript)
                 .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_STYLE", with: resources.texmathStyle)
                 .replacingOccurrences(of: "PLACEHOLDER_FONT_SIZE_MULTIPLIER", with: String(format: "%.1f", parent.fontSize))
             platformView.loadHTMLString(htmlString, baseURL: nil)
-            platformView.currentFontSize = parent.fontSize
         }
 
         /// Update the content on first finishing loading.
@@ -183,6 +187,17 @@ public struct MarkdownWebView: PlatformViewRepresentable {
             let customWebView = webView as! CustomWebView
             customWebView.updateMarkdownContent(parent.markdownContent)
             customWebView.updateFontSize(parent.fontSize)
+        }
+
+        /// Reload content if necessary.
+        /// The content process may have terminated if the app was in the background and came back to the foreground.
+        public func webViewWebContentProcessDidTerminate(_: WKWebView) {
+            print("MarkdownWebView: Web content process was terminated. Reloading HTML.")
+            // The webView passed here is our platformView.
+            // We need to reload the base HTML.
+            // The didFinish navigation delegate will then take care of updating
+            // the markdown content and font size.
+            loadInitialHTML()
         }
 
         public func webView(_: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {

@@ -191,12 +191,12 @@ public struct MarkdownWebView: PlatformViewRepresentable {
 
         /// Reload content if necessary.
         /// The content process may have terminated if the app was in the background and came back to the foreground.
-        public func webViewWebContentProcessDidTerminate(_: WKWebView) {
+        public func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
             print("MarkdownWebView: Web content process was terminated. Reloading HTML.")
-            // The webView passed here is our platformView.
-            // We need to reload the base HTML.
-            // The didFinish navigation delegate will then take care of updating
-            // the markdown content and font size.
+            let customWebView = webView as! CustomWebView
+            // Reset content height to ensure proper sizing after reload
+            customWebView.contentHeight = 0
+            customWebView.invalidateIntrinsicContentSize()
             loadInitialHTML()
         }
 

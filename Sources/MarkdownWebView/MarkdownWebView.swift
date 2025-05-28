@@ -74,6 +74,10 @@ public struct MarkdownWebView: PlatformViewRepresentable {
     let fontSize: CGFloat
     let initialHeight: CGFloat?
 
+    #if os(iOS)
+    @Environment(\.scenePhase) private var scenePhase
+    #endif
+
     public init(_ markdownContent: String, customStylesheet: String? = nil, fontSize: CGFloat = 1.0, initialHeight: CGFloat? = nil) {
         self.markdownContent = markdownContent
         self.customStylesheet = customStylesheet
@@ -97,11 +101,31 @@ public struct MarkdownWebView: PlatformViewRepresentable {
     #if os(macOS)
     public func makeNSView(context: Context) -> CustomWebView { context.coordinator.platformView }
     #elseif os(iOS)
-    public func makeUIView(context: Context) -> CustomWebView { context.coordinator.platformView }
+    public func makeUIView(context: Context) -> CustomWebView {
+        #if os(iOS)
+        context.coordinator.currentScenePhase = scenePhase
+        #endif
+        return context.coordinator.platformView
+    }
     #endif
 
-    func updatePlatformView(_ platformView: CustomWebView, context _: Context) {
+    func updatePlatformView(_ platformView: CustomWebView, context: Context) {
         guard !platformView.isLoading else { return } /// This function might be called when the page is still loading, at which time `window.proxy` is not available yet.
+
+        #if os(iOS)
+        // Check if scene phase changed to active and handle potential web view refresh
+        let coordinator = context.coordinator
+        if coordinator.currentScenePhase != scenePhase {
+            let previousPhase = coordinator.currentScenePhase
+            coordinator.currentScenePhase = scenePhase
+
+            // If transitioning from background/inactive to active, check if web view needs refresh
+            if scenePhase == .active, previousPhase == .background || previousPhase == .inactive {
+                coordinator.handleForegroundTransition()
+            }
+        }
+        #endif
+
         platformView.updateMarkdownContent(markdownContent)
         platformView.updateFontSize(fontSize)
     }
@@ -123,6 +147,10 @@ public struct MarkdownWebView: PlatformViewRepresentable {
     public class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         let parent: MarkdownWebView
         let platformView: CustomWebView
+
+        #if os(iOS)
+        var currentScenePhase: ScenePhase = .active
+        #endif
 
         init(parent: MarkdownWebView) {
             self.parent = parent
@@ -149,7 +177,7 @@ public struct MarkdownWebView: PlatformViewRepresentable {
             /// Set transparent background.
             #if os(macOS)
             platformView.setValue(false, forKey: "drawsBackground")
-            /// Equavalent to `.setValue(true, forKey: "drawsTransparentBackground")` on macOS 10.12 and before, which this library doesn't target.
+            /// Equivalent to `.setValue(true, forKey: "drawsTransparentBackground")` on macOS 10.12 and before, which this library doesn't target.
             #elseif os(iOS)
             platformView.isOpaque = false
             #endif
@@ -163,6 +191,13 @@ public struct MarkdownWebView: PlatformViewRepresentable {
             loadInitialHTML()
             platformView.currentFontSize = parent.fontSize
         }
+
+        #if os(iOS)
+        func handleForegroundTransition() {
+            platformView.invalidateIntrinsicContentSize()
+            loadInitialHTML()
+        }
+        #endif
 
         func loadInitialHTML() {
             // Use the cached static resources
@@ -195,7 +230,6 @@ public struct MarkdownWebView: PlatformViewRepresentable {
             print("MarkdownWebView: Web content process was terminated. Reloading HTML.")
             let customWebView = webView as! CustomWebView
             // Reset content height to ensure proper sizing after reload
-            customWebView.contentHeight = 0
             customWebView.invalidateIntrinsicContentSize()
             loadInitialHTML()
         }
@@ -256,7 +290,7 @@ public struct MarkdownWebView: PlatformViewRepresentable {
             return .init(width: super.intrinsicContentSize.width, height: height)
         }
 
-        /// Disables scrolling.
+        /// Disables scrolling
         #if os(macOS)
         override public func scrollWheel(with event: NSEvent) {
             super.scrollWheel(with: event)

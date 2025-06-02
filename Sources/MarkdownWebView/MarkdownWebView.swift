@@ -113,15 +113,16 @@ public struct MarkdownWebView: PlatformViewRepresentable {
         guard !platformView.isLoading else { return } /// This function might be called when the page is still loading, at which time `window.proxy` is not available yet.
 
         #if os(iOS)
-        // Check if scene phase changed to active and handle potential web view refresh
+        // Check if scene phase changed and handle foreground transition
         let coordinator = context.coordinator
         if coordinator.currentScenePhase != scenePhase {
             let previousPhase = coordinator.currentScenePhase
             coordinator.currentScenePhase = scenePhase
 
-            // If transitioning from background/inactive to active, check if web view needs refresh
-            if scenePhase == .active, previousPhase == .background || previousPhase == .inactive {
+            // Even when coming back from the background, previousPhase briefly changes to .inactive before changing to .active
+            if scenePhase == .active, previousPhase == .inactive || previousPhase == .background {
                 coordinator.handleForegroundTransition()
+                return // Return early to let handleForegroundTransition manage the reload
             }
         }
         #endif
@@ -194,6 +195,7 @@ public struct MarkdownWebView: PlatformViewRepresentable {
 
         #if os(iOS)
         func handleForegroundTransition() {
+            print("MarkdownWebView: App returned from background - reloading HTML")
             platformView.invalidateIntrinsicContentSize()
             loadInitialHTML()
         }
@@ -214,14 +216,17 @@ public struct MarkdownWebView: PlatformViewRepresentable {
                 .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_SCRIPT", with: resources.texmathScript)
                 .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_STYLE", with: resources.texmathStyle)
                 .replacingOccurrences(of: "PLACEHOLDER_FONT_SIZE_MULTIPLIER", with: String(format: "%.1f", parent.fontSize))
+            
+            print("MarkdownWebView: Loading initial HTML")
             platformView.loadHTMLString(htmlString, baseURL: nil)
         }
 
         /// Update the content on first finishing loading.
         public func webView(_ webView: WKWebView, didFinish _: WKNavigation!) {
+            print("MarkdownWebView: Web view finished loading")
             let customWebView = webView as! CustomWebView
-            customWebView.updateMarkdownContent(parent.markdownContent)
-            customWebView.updateFontSize(parent.fontSize)
+            customWebView.updateMarkdownContent(self.parent.markdownContent)
+            customWebView.updateFontSize(self.parent.fontSize)
         }
 
         /// Reload content if necessary.
@@ -306,15 +311,29 @@ public struct MarkdownWebView: PlatformViewRepresentable {
         #endif
 
         func updateMarkdownContent(_ markdownContent: String) {
-            guard let markdownContentBase64Encoded = markdownContent.data(using: .utf8)?.base64EncodedString() else { return }
+            guard let markdownContentBase64Encoded = markdownContent.data(using: .utf8)?.base64EncodedString() else { 
+                print("MarkdownWebView: Failed to encode markdown content to base64")
+                return 
+            }
 
-            callAsyncJavaScript("window.updateWithMarkdownContentBase64Encoded(`\(markdownContentBase64Encoded)`)", in: nil, in: .page, completionHandler: nil)
+            let jsCode = "window.updateWithMarkdownContentBase64Encoded(`\(markdownContentBase64Encoded)`)"
+            callAsyncJavaScript(jsCode, in: nil, in: .page) { result in
+                if case .failure(let error) = result {
+                    print("MarkdownWebView: JavaScript execution error: \(error.localizedDescription)")
+                }
+            }
         }
 
         func updateFontSize(_ fontSize: CGFloat) {
             guard fontSize != currentFontSize else { return }
             currentFontSize = fontSize
-            callAsyncJavaScript("window.updateFontSizeMultiplier(\(fontSize))", in: nil, in: .page, completionHandler: nil)
+            
+            let jsCode = "window.updateFontSizeMultiplier(\(fontSize))"
+            callAsyncJavaScript(jsCode, in: nil, in: .page) { result in
+                if case .failure(let error) = result {
+                    print("MarkdownWebView: JavaScript execution error: \(error.localizedDescription)")
+                }
+            }
         }
 
         #if os(macOS)

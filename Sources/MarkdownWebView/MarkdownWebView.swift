@@ -74,10 +74,6 @@ public struct MarkdownWebView: PlatformViewRepresentable {
     let fontSize: CGFloat
     let initialHeight: CGFloat?
 
-    #if os(iOS)
-    @Environment(\.scenePhase) private var scenePhase
-    #endif
-
     public init(_ markdownContent: String, customStylesheet: String? = nil, fontSize: CGFloat = 1.0, initialHeight: CGFloat? = nil) {
         self.markdownContent = markdownContent
         self.customStylesheet = customStylesheet
@@ -102,30 +98,12 @@ public struct MarkdownWebView: PlatformViewRepresentable {
     public func makeNSView(context: Context) -> CustomWebView { context.coordinator.platformView }
     #elseif os(iOS)
     public func makeUIView(context: Context) -> CustomWebView {
-        #if os(iOS)
-        context.coordinator.currentScenePhase = scenePhase
-        #endif
         return context.coordinator.platformView
     }
     #endif
 
     func updatePlatformView(_ platformView: CustomWebView, context: Context) {
         guard !platformView.isLoading else { return } /// This function might be called when the page is still loading, at which time `window.proxy` is not available yet.
-
-        #if os(iOS)
-        // Check if scene phase changed and handle foreground transition
-        let coordinator = context.coordinator
-        if coordinator.currentScenePhase != scenePhase {
-            let previousPhase = coordinator.currentScenePhase
-            coordinator.currentScenePhase = scenePhase
-
-            // Even when coming back from the background, previousPhase briefly changes to .inactive before changing to .active
-            if scenePhase == .active, previousPhase == .inactive || previousPhase == .background {
-                coordinator.handleForegroundTransition()
-                return // Return early to let handleForegroundTransition manage the reload
-            }
-        }
-        #endif
 
         platformView.updateMarkdownContent(markdownContent)
         platformView.updateFontSize(fontSize)
@@ -148,10 +126,6 @@ public struct MarkdownWebView: PlatformViewRepresentable {
     public class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         let parent: MarkdownWebView
         let platformView: CustomWebView
-
-        #if os(iOS)
-        var currentScenePhase: ScenePhase = .active
-        #endif
 
         init(parent: MarkdownWebView) {
             self.parent = parent
@@ -193,14 +167,6 @@ public struct MarkdownWebView: PlatformViewRepresentable {
             platformView.currentFontSize = parent.fontSize
         }
 
-        #if os(iOS)
-        func handleForegroundTransition() {
-            print("MarkdownWebView: App returned from background - reloading HTML")
-            platformView.invalidateIntrinsicContentSize()
-            loadInitialHTML()
-        }
-        #endif
-
         func loadInitialHTML() {
             // Use the cached static resources
             guard let resources = MarkdownWebView.resources else {
@@ -225,6 +191,9 @@ public struct MarkdownWebView: PlatformViewRepresentable {
         public func webView(_ webView: WKWebView, didFinish _: WKNavigation!) {
             print("MarkdownWebView: Web view finished loading")
             let customWebView = webView as! CustomWebView
+            
+            // Always update content and font size after loading completes
+            print("MarkdownWebView: Updating markdown content and font size after load completion")
             customWebView.updateMarkdownContent(self.parent.markdownContent)
             customWebView.updateFontSize(self.parent.fontSize)
         }
@@ -234,8 +203,20 @@ public struct MarkdownWebView: PlatformViewRepresentable {
         public func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
             print("MarkdownWebView: Web content process was terminated. Reloading HTML.")
             let customWebView = webView as! CustomWebView
-            // Reset content height to ensure proper sizing after reload
+            
+            // Reset layout to ensure proper sizing after reload
             customWebView.invalidateIntrinsicContentSize()
+            
+            // Re-register user content controller handlers in case they were lost
+            customWebView.configuration.userContentController.removeScriptMessageHandler(forName: "sizeChangeHandler")
+            customWebView.configuration.userContentController.removeScriptMessageHandler(forName: "renderedContentHandler")
+            customWebView.configuration.userContentController.removeScriptMessageHandler(forName: "copyToPasteboard")
+            
+            customWebView.configuration.userContentController.add(self, name: "sizeChangeHandler")
+            customWebView.configuration.userContentController.add(self, name: "renderedContentHandler")
+            customWebView.configuration.userContentController.add(self, name: "copyToPasteboard")
+            
+            // Reload the HTML - content will be restored in webView(_:didFinish:)
             loadInitialHTML()
         }
 

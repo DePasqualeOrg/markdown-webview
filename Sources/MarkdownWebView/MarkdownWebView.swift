@@ -183,17 +183,14 @@ public struct MarkdownWebView: PlatformViewRepresentable {
                 .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_STYLE", with: resources.texmathStyle)
                 .replacingOccurrences(of: "PLACEHOLDER_FONT_SIZE_MULTIPLIER", with: String(format: "%.1f", parent.fontSize))
             
-            print("MarkdownWebView: Loading initial HTML")
             platformView.loadHTMLString(htmlString, baseURL: nil)
         }
 
         /// Update the content on first finishing loading.
         public func webView(_ webView: WKWebView, didFinish _: WKNavigation!) {
-            print("MarkdownWebView: Web view finished loading")
             let customWebView = webView as! CustomWebView
             
             // Always update content and font size after loading completes
-            print("MarkdownWebView: Updating markdown content and font size after load completion")
             customWebView.updateMarkdownContent(self.parent.markdownContent)
             customWebView.updateFontSize(self.parent.fontSize)
         }

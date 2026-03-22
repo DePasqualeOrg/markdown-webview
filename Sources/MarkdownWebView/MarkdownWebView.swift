@@ -102,7 +102,9 @@ public struct MarkdownWebView: PlatformViewRepresentable {
     }
     #endif
 
-    func updatePlatformView(_ platformView: CustomWebView, context _: Context) {
+    func updatePlatformView(_ platformView: CustomWebView, context: Context) {
+        context.coordinator.parent = self
+        platformView.initialHeight = initialHeight
         guard !platformView.isLoading else { return } /// This function might be called when the page is still loading, at which time `window.proxy` is not available yet.
 
         platformView.updateMarkdownContent(markdownContent)
@@ -124,7 +126,7 @@ public struct MarkdownWebView: PlatformViewRepresentable {
     }
 
     public class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
-        let parent: MarkdownWebView
+        var parent: MarkdownWebView
         let platformView: CustomWebView
 
         init(parent: MarkdownWebView) {

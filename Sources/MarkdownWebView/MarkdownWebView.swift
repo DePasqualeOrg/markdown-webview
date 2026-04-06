@@ -185,6 +185,7 @@ public struct MarkdownWebView: PlatformViewRepresentable {
                 .replacingOccurrences(of: "PLACEHOLDER_TEXMATH_STYLE", with: resources.texmathStyle)
                 .replacingOccurrences(of: "PLACEHOLDER_FONT_SIZE_MULTIPLIER", with: String(format: "%.1f", parent.fontSize))
 
+            platformView.currentMarkdownContent = ""
             platformView.loadHTMLString(htmlString, baseURL: nil)
         }
 
@@ -269,6 +270,7 @@ public struct MarkdownWebView: PlatformViewRepresentable {
         var contentHeight: CGFloat = 0
         var initialHeight: CGFloat?
         var currentFontSize: CGFloat = 1.0
+        var currentMarkdownContent: String = ""
 
         override public var intrinsicContentSize: CGSize {
             let height = contentHeight > 0 ? contentHeight : (initialHeight ?? 0)
@@ -291,6 +293,9 @@ public struct MarkdownWebView: PlatformViewRepresentable {
         #endif
 
         func updateMarkdownContent(_ markdownContent: String) {
+            guard markdownContent != currentMarkdownContent else { return }
+            currentMarkdownContent = markdownContent
+
             guard let markdownContentBase64Encoded = markdownContent.data(using: .utf8)?.base64EncodedString() else {
                 print("MarkdownWebView: Failed to encode markdown content to base64")
                 return
